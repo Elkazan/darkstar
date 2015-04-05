@@ -27,17 +27,16 @@ end;
 -----------------------------------------
 
 function onItemUse(target)
-	target:addStatusEffect(EFFECT_FOOD,0,0,1800,4413);
+	target:addStatusEffect(EFFECT_REFRESH,99,3,180000, 0, 3);
 end;
 
------------------------------------------
+-----------------------------------
 -- onEffectGain Action
------------------------------------------
+-----------------------------------
 
 function onEffectGain(target,effect)
-	target:addMod(MOD_MP, 25);
-	target:addMod(MOD_AGI,-1);
-	target:addMod(MOD_INT, 3);
+	target:addStatusEffect(EFFECT_REFRESH);
+
 end;
 
 -----------------------------------------
@@ -45,7 +44,6 @@ end;
 -----------------------------------------
 
 function onEffectLose(target,effect)
-	target:delMod(MOD_MP, 25);
-	target:delMod(MOD_AGI,-1);
-	target:delMod(MOD_INT, 3);
+	target:delStatusEffect(EFFECT_REFRESH);
+
 end;
