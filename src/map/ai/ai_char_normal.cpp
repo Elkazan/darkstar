@@ -63,6 +63,41 @@ This file is part of DarkStar-server source code.
 #include "ai_char_normal.h"
 #include "ai_pet_dummy.h"
 
+void trackArrowUsageForScavenge(CItemWeapon* PAmmo, CCharEntity* m_PChar)
+{
+    // Check if local has been set yet
+    if (m_PChar->GetLocalVar("ArrowsUsed") == 0)
+    {
+        // Local not set yet so set
+        m_PChar->SetLocalVar("ArrowsUsed", PAmmo->getID() * 10000 + 1);
+        //printf("\n arrows used: %i", m_PChar->GetLocalVar("ArrowsUsed"));
+    }
+    else
+    {
+        // Local exists now check if arrow used is same as last time
+        if ((floor(m_PChar->GetLocalVar("ArrowsUsed") / 10000)) == PAmmo->getID())
+        {
+            // Same arrow used as last time now check that arrows used do not go above 1980
+            if (floor(m_PChar->GetLocalVar("ArrowsUsed") % 10000) >= 1980)
+            {
+                // Do not increment arrows used past 1980
+                //printf("\n arrows used: %i", m_PChar->GetLocalVar("ArrowsUsed"));
+            }
+            else
+            {
+                // Safe to increment arrows used
+                m_PChar->SetLocalVar("ArrowsUsed", m_PChar->GetLocalVar("ArrowsUsed") + 1);
+                //printf("\n arrows used %i", m_PChar->GetLocalVar("ArrowsUsed"));
+            }
+        }
+        else
+        {
+            // Different arrow is being used so remake local
+            m_PChar->SetLocalVar("ArrowsUsed", PAmmo->getID() * 10000 + 1);
+            //printf("\n arrows used: %i", m_PChar->GetLocalVar("ArrowsUsed"));
+        }
+    }
+}
 
 /************************************************************************
 *																		*
@@ -90,6 +125,8 @@ CAICharNormal::CAICharNormal(CCharEntity* PChar)
 void CAICharNormal::CheckCurrentAction(uint32 tick)
 {
     m_Tick = tick;
+
+    CBattleEntity* PSelf = m_PChar;
 
     if ((m_ActionType != ACTION_NONE) && jailutils::InPrison(m_PChar))
     {
@@ -129,7 +166,11 @@ void CAICharNormal::CheckCurrentAction(uint32 tick)
 
     default: DSP_DEBUG_BREAK_IF(true);
     }
-    m_PChar->UpdateEntity();
+
+    if (m_PChar && PSelf->PBattleAI == this)
+    {
+        m_PChar->UpdateEntity();
+    }
 }
 
 void CAICharNormal::CheckActionAfterReceive(uint32 tick)
@@ -151,16 +192,17 @@ void CAICharNormal::CheckActionAfterReceive(uint32 tick)
 
     switch (m_ActionType)
     {
-    case ACTION_NONE:			  									break;
-    case ACTION_MAGIC_START:			ActionMagicStart();			break;
-    case ACTION_ENGAGE:					ActionEngage();				break;
-    case ACTION_DISENGAGE:				ActionDisengage();	 		break;
-    case ACTION_RANGED_START:			ActionRangedStart();		break;
-    case ACTION_ITEM_START:				ActionItemStart();			break;
-    case ACTION_CHANGE_TARGET:	        ActionChangeBattleTarget(); break;
-    case ACTION_WEAPONSKILL_START:		ActionWeaponSkillStart();	break;
-    case ACTION_JOBABILITY_START:		ActionJobAbilityStart();	break;
-    case ACTION_RAISE_MENU_SELECTION:	ActionRaiseMenuSelection(); break;
+    case ACTION_MAGIC_START:
+    case ACTION_ENGAGE:
+    case ACTION_DISENGAGE:
+    case ACTION_RANGED_START:
+    case ACTION_ITEM_START:
+    case ACTION_CHANGE_TARGET:
+    case ACTION_WEAPONSKILL_START:
+    case ACTION_JOBABILITY_START:
+    case ACTION_RAISE_MENU_SELECTION:
+        //call the classes (or subclasses) action handlers
+        CheckCurrentAction(tick);
 
     default: break;
     }
@@ -188,6 +230,11 @@ bool CAICharNormal::GetValidTarget(CBattleEntity** PBattleTarget, uint8 ValidTar
     if (PTarget == nullptr)
     {
         *PBattleTarget = m_PChar; //this prevents a nullptr crash when message is sent
+        return false;
+    }
+
+    if (m_PChar->StatusEffectContainer->GetConfrontationEffect() != PTarget->StatusEffectContainer->GetConfrontationEffect())
+    {
         return false;
     }
 
@@ -798,7 +845,7 @@ void CAICharNormal::ActionRangedStart()
         if (charutils::hasTrait(m_PChar, TRAIT_RAPID_SHOT))
         {
             uint16 chance = (m_PChar->getMod(MOD_RAPID_SHOT) + m_PChar->PMeritPoints->GetMeritValue(MERIT_RAPID_SHOT_RATE, m_PChar));
-            if (WELL512::GetRandomNumber(100) < chance)
+            if (dsprand::GetRandomNumber(100) < chance)
             {
                 m_PChar->m_rangedDelay = 1;
                 m_PChar->isRapidShot = true;
@@ -1010,7 +1057,7 @@ void CAICharNormal::ActionRangedFinish()
                 Action.speceffect = SPECEFFECT_NONE;
                 i = hitCount; // end barrage, shot missed
             }
-            else if (WELL512::GetRandomNumber(100) < battleutils::GetRangedHitRate(m_PChar, m_PBattleSubTarget, isBarrage)) // hit!
+            else if (dsprand::GetRandomNumber(100) < battleutils::GetRangedHitRate(m_PChar, m_PBattleSubTarget, isBarrage)) // hit!
             {
                 // absorbed by shadow
                 if (battleutils::IsAbsorbByShadow(m_PBattleSubTarget))
@@ -1022,7 +1069,7 @@ void CAICharNormal::ActionRangedFinish()
                     float pdif = battleutils::GetRangedPDIF(m_PChar, m_PBattleSubTarget);
                     bool isCrit = false;
 
-                    if (WELL512::GetRandomNumber(100) < battleutils::GetCritHitRate(m_PChar, m_PBattleSubTarget, true))
+                    if (dsprand::GetRandomNumber(100) < battleutils::GetCritHitRate(m_PChar, m_PBattleSubTarget, true))
                     {
                         pdif *= 1.25; //uncapped
                         int16 criticaldamage = m_PChar->getMod(MOD_CRIT_DMG_INCREASE);
@@ -1092,10 +1139,11 @@ void CAICharNormal::ActionRangedFinish()
                 recycleChance = 100;
             }
 
-            if (PAmmo != nullptr && WELL512::GetRandomNumber(100) > recycleChance)
+            if (PAmmo != nullptr && dsprand::GetRandomNumber(100) > recycleChance)
             {
                 if ((PAmmo->getQuantity() - 1) < 1) // ammo will run out after this shot, make sure we remove it from equip
                 {
+                    trackArrowUsageForScavenge(PAmmo, m_PChar);
                     uint8 slot = m_PChar->equip[SLOT_AMMO];
 		    uint8 loc = m_PChar->equipLoc[SLOT_AMMO];
                     charutils::UnequipItem(m_PChar, SLOT_AMMO);
@@ -1106,6 +1154,7 @@ void CAICharNormal::ActionRangedFinish()
                 }
                 else
                 {
+                    trackArrowUsageForScavenge(PAmmo, m_PChar);
                     charutils::UpdateItem(m_PChar, m_PChar->equipLoc[SLOT_AMMO], m_PChar->equip[SLOT_AMMO], -1);
                 }
                 m_PChar->pushPacket(new CInventoryFinishPacket());
@@ -1180,7 +1229,7 @@ void CAICharNormal::ActionRangedFinish()
             uint16 power = m_PChar->StatusEffectContainer->GetStatusEffect(EFFECT_SANGE)->GetPower();
 
             // remove shadows
-            while (realHits-- && WELL512::GetRandomNumber(100) <= power && battleutils::IsAbsorbByShadow(m_PChar));
+            while (realHits-- && dsprand::GetRandomNumber(100) <= power && battleutils::IsAbsorbByShadow(m_PChar));
 
             m_PChar->StatusEffectContainer->DelStatusEffect(EFFECT_SANGE);
         }
@@ -1193,7 +1242,7 @@ void CAICharNormal::ActionRangedFinish()
         if (m_PChar->StatusEffectContainer->HasStatusEffect(EFFECT_DOUBLE_SHOT, 0) && !m_PChar->secondDoubleShotTaken &&	!isBarrage && !isSange)
         {
             uint16 doubleShotChance = m_PChar->getMod(MOD_DOUBLE_SHOT_RATE);
-            if (WELL512::GetRandomNumber(100) < doubleShotChance)
+            if (dsprand::GetRandomNumber(100) < doubleShotChance)
             {
                 m_PChar->secondDoubleShotTaken = true;
                 m_ActionType = ACTION_RANGED_FINISH;
@@ -1514,7 +1563,7 @@ void CAICharNormal::ActionJobAbilityFinish()
 
     if (m_PJobAbility->getMeritModID() > 0 && !(m_PJobAbility->getAddType() & ADDTYPE_MERIT))
     {
-        meritRecastReduction = m_PChar->PMeritPoints->GetMeritValue((Merit_t*)m_PChar->PMeritPoints->GetMerit((MERIT_TYPE)m_PJobAbility->getMeritModID()), m_PChar);
+        meritRecastReduction = m_PChar->PMeritPoints->GetMeritValue((MERIT_TYPE)m_PJobAbility->getMeritModID(), m_PChar);
     }
 
     uint32 RecastTime = (m_PJobAbility->getRecastTime() - meritRecastReduction);
@@ -1575,7 +1624,7 @@ void CAICharNormal::ActionJobAbilityFinish()
         if (m_PJobAbility->getID() >= ABILITY_FIGHTERS_ROLL && m_PJobAbility->getID() <= ABILITY_SCHOLARS_ROLL)
         {
             m_PChar->StatusEffectContainer->DelStatusEffectSilent(EFFECT_DOUBLE_UP_CHANCE);
-            uint8 roll = WELL512::GetRandomNumber(1,7);
+            uint8 roll = dsprand::GetRandomNumber(1,7);
             m_PChar->StatusEffectContainer->AddStatusEffect(new CStatusEffect(
                 EFFECT_DOUBLE_UP_CHANCE,
                 EFFECT_DOUBLE_UP_CHANCE,
@@ -1646,7 +1695,7 @@ void CAICharNormal::ActionJobAbilityFinish()
         }
         else if (m_PJobAbility->getID() == ABILITY_WILD_CARD)
         {
-            uint8 roll = WELL512::GetRandomNumber(1,7);
+            uint8 roll = dsprand::GetRandomNumber(1,7);
             uint16 AnimationId = 132 + (roll - 1);
 
             CAbility* rollAbility = ability::GetAbility(ABILITY_WILD_CARD);
@@ -1693,13 +1742,13 @@ void CAICharNormal::ActionJobAbilityFinish()
             if (m_PChar->StatusEffectContainer->HasStatusEffect(EFFECT_DOUBLE_UP_CHANCE))
             {
                 //TODO: some reason cosair double up chance is sometimes null
-                uint8 roll = (WELL512::GetRandomNumber(1,7));
+                uint8 roll = (dsprand::GetRandomNumber(1,7));
                 CStatusEffect* doubleUpEffect = m_PChar->StatusEffectContainer->GetStatusEffect(EFFECT_DOUBLE_UP_CHANCE);
 
                 if (m_PChar->StatusEffectContainer->HasStatusEffect(EFFECT_SNAKE_EYE))
                 {
                     //check for instant 11 via Snake Eye merits
-                    if (doubleUpEffect->GetPower() >= 5 && WELL512::GetRandomNumber(100) < m_PChar->StatusEffectContainer->GetStatusEffect(EFFECT_SNAKE_EYE)->GetPower())
+                    if (doubleUpEffect->GetPower() >= 5 && dsprand::GetRandomNumber(100) < m_PChar->StatusEffectContainer->GetStatusEffect(EFFECT_SNAKE_EYE)->GetPower())
                     {
                         roll = 11 - doubleUpEffect->GetPower();
                     }
@@ -1896,7 +1945,7 @@ void CAICharNormal::ActionJobAbilityFinish()
                 Action.reaction = REACTION_EVADE;
                 Action.speceffect = SPECEFFECT_NONE;
             }
-            else if (WELL512::GetRandomNumber(100) < battleutils::GetRangedHitRate(m_PChar, m_PBattleSubTarget, false)) // hit!
+            else if (dsprand::GetRandomNumber(100) < battleutils::GetRangedHitRate(m_PChar, m_PBattleSubTarget, false)) // hit!
             {
                 //check for shadow absorb
                 if (battleutils::IsAbsorbByShadow(m_PBattleSubTarget)) {
@@ -1911,7 +1960,7 @@ void CAICharNormal::ActionJobAbilityFinish()
 
                     float pdif = battleutils::GetRangedPDIF(m_PChar, m_PBattleSubTarget);
 
-                    if (WELL512::GetRandomNumber(100) < battleutils::GetCritHitRate(m_PChar, m_PBattleSubTarget, true))
+                    if (dsprand::GetRandomNumber(100) < battleutils::GetCritHitRate(m_PChar, m_PBattleSubTarget, true))
                     {
                         pdif *= 1.25; //uncapped
                         Action.speceffect = SPECEFFECT_CRITICAL_HIT;
@@ -1955,11 +2004,12 @@ void CAICharNormal::ActionJobAbilityFinish()
                 recycleChance = 100;
             }
 
-            if (PAmmo != nullptr && WELL512::GetRandomNumber(100) > recycleChance)
+            if (PAmmo != nullptr && dsprand::GetRandomNumber(100) > recycleChance)
             {
 
                 if ((PAmmo->getQuantity() - 1) < 1) // ammo will run out after this shot, make sure we remove it from equip
                 {
+                    trackArrowUsageForScavenge(PAmmo, m_PChar);
                     uint8 slot = m_PChar->equip[SLOT_AMMO];
 		    uint8 loc = m_PChar->equipLoc[SLOT_AMMO];
                     charutils::UnequipItem(m_PChar, SLOT_AMMO);
@@ -1968,6 +2018,7 @@ void CAICharNormal::ActionJobAbilityFinish()
                 }
                 else
                 {
+                    trackArrowUsageForScavenge(PAmmo, m_PChar);
                     charutils::UpdateItem(m_PChar, m_PChar->equipLoc[SLOT_AMMO], m_PChar->equip[SLOT_AMMO], -1);
                 }
 
@@ -1984,6 +2035,17 @@ void CAICharNormal::ActionJobAbilityFinish()
                     Action.messageID = 318;
                 }
             }
+            m_PChar->m_ActionList.push_back(Action);
+        }
+        else if (m_PJobAbility->getID() == ABILITY_SCAVENGE)
+        {
+            Action.ActionTarget = m_PBattleSubTarget;
+            Action.reaction = REACTION_NONE;
+            Action.speceffect = SPECEFFECT_RECOIL;
+            Action.animation = m_PJobAbility->getAnimationID();
+
+            int32 value = luautils::OnUseAbility(m_PChar, m_PBattleSubTarget, GetCurrentJobAbility(), &Action);
+
             m_PChar->m_ActionList.push_back(Action);
         }
         else
@@ -2023,7 +2085,7 @@ void CAICharNormal::ActionJobAbilityFinish()
                 //Action.flag = 3;
 
                 uint16 shadowBindDuration = 30 + m_PChar->getMod(MOD_SHADOW_BIND_EXT);
-                if (WELL512::GetRandomNumber(100) >= m_PBattleSubTarget->getMod(MOD_BINDRES))
+                if (dsprand::GetRandomNumber(100) >= m_PBattleSubTarget->getMod(MOD_BINDRES))
                 {
                     // Shadow bind success!
                     m_PChar->loc.zone->PushPacket(m_PChar, CHAR_INRANGE_SELF, new CMessageBasicPacket(m_PChar, m_PBattleSubTarget, m_PJobAbility->getID() + 16, 11, 277));
@@ -2186,18 +2248,19 @@ void CAICharNormal::ActionJobAbilityFinish()
 
         // TODO: все перенести в скрипты, т.к. система позволяет получать указатель на питомца
 
-        if (m_PJobAbility->getID() == ABILITY_CALL_BEAST || m_PJobAbility->getID() == ABILITY_REWARD)
+        if (m_PJobAbility->getID() == ABILITY_CALL_BEAST || m_PJobAbility->getID() == ABILITY_REWARD ||
+        m_PJobAbility->getID() == ABILITY_ANGON || m_PJobAbility->getID() == ABILITY_TOMAHAWK || m_PJobAbility->getID() == ABILITY_REPAIR)
         {
             CItemArmor* PAmmo = m_PChar->getEquip(SLOT_AMMO);
             uint8 slot = m_PChar->equip[SLOT_AMMO];
-	    uint8 loc = m_PChar->equipLoc[SLOT_AMMO];
+            uint8 loc = m_PChar->equipLoc[SLOT_AMMO];
             if (PAmmo->getQuantity() == 1)
             {
-		charutils::UnequipItem(m_PChar, SLOT_AMMO);
+                charutils::UnequipItem(m_PChar, SLOT_AMMO);
                 charutils::SaveCharEquip(m_PChar);
-		charutils::UpdateItem(m_PChar, loc, slot, -1);
             }
-            
+            charutils::UpdateItem(m_PChar, loc, slot, -1);
+
             m_PChar->pushPacket(new CInventoryFinishPacket());
         }
 
@@ -2543,6 +2606,12 @@ void CAICharNormal::ActionWeaponSkillFinish()
         {
             Action.param = damage;
             Action.messageID = 185; //damage ws
+
+            if (m_PBattleSubTarget->objtype == TYPE_MOB)
+            {
+                uint16 PWeaponskill = m_PWeaponSkill->getID();
+                luautils::OnWeaponskillHit(m_PBattleSubTarget, m_PChar, PWeaponskill);
+            }
         }
     }
     else
@@ -2564,7 +2633,7 @@ void CAICharNormal::ActionWeaponSkillFinish()
     m_PTargetFind->reset();
     m_PChar->m_ActionList.clear();
 
-    uint8 wspoints = 0;
+    uint16 wspoints = 0;
 
     // try to skill up if ws hit
     if (Action.reaction == REACTION_HIT)
@@ -2591,7 +2660,7 @@ void CAICharNormal::ActionWeaponSkillFinish()
             luautils::OnAdditionalEffect(m_PChar, m_PBattleSubTarget, PAmmo, &Action, (uint32)damage);
             Action.additionalEffect = SUBEFFECT_NONE;
         }
-        if (PAmmo != nullptr && WELL512::GetRandomNumber(100) > recycleChance)
+        if (PAmmo != nullptr && dsprand::GetRandomNumber(100) > recycleChance)
         {
             if ((PAmmo->getQuantity() - 1) < 1) // ammo will run out after this shot, make sure we remove it from equip
             {
@@ -3055,7 +3124,7 @@ void CAICharNormal::DoAttack()
             Action.reaction = REACTION_EVADE;
             Action.speceffect = SPECEFFECT_NONE;
         }
-        else if ((WELL512::GetRandomNumber(100) < attack.GetHitRate() || attackRound.GetSATAOccured()) &&
+        else if ((dsprand::GetRandomNumber(100) < attack.GetHitRate() || attackRound.GetSATAOccured()) &&
             !m_PBattleTarget->StatusEffectContainer->HasStatusEffect(EFFECT_ALL_MISS))
         {
             // attack hit, try to be absorbed by shadow unless it is a SATA attack round
@@ -3069,7 +3138,7 @@ void CAICharNormal::DoAttack()
             else
             {
                 // Set this attack's critical flag.
-                attack.SetCritical(WELL512::GetRandomNumber(100) < battleutils::GetCritHitRate(m_PChar, m_PBattleTarget, !attack.IsFirstSwing()));
+                attack.SetCritical(dsprand::GetRandomNumber(100) < battleutils::GetCritHitRate(m_PChar, m_PBattleTarget, !attack.IsFirstSwing()));
 
                 // Critical hit.
                 if (attack.IsCritical())
@@ -3153,8 +3222,8 @@ void CAICharNormal::DoAttack()
             zanshinChance = dsp_cap(zanshinChance, 0, 100);
             //zanshin may only proc on a missed/guarded/countered swing or as SAM main with hasso up (at 25% of the base zanshin rate)
             if (((Action.reaction == REACTION_EVADE || Action.reaction == REACTION_GUARD || 
-                Action.spikesEffect == SUBEFFECT_COUNTER) && WELL512::GetRandomNumber(100) < zanshinChance) || 
-                (m_PChar->GetMJob() == JOB_SAM && m_PChar->StatusEffectContainer->HasStatusEffect(EFFECT_HASSO) && WELL512::GetRandomNumber(100) < (zanshinChance / 4)))
+                Action.spikesEffect == SUBEFFECT_COUNTER) && dsprand::GetRandomNumber(100) < zanshinChance) || 
+                (m_PChar->GetMJob() == JOB_SAM && m_PChar->StatusEffectContainer->HasStatusEffect(EFFECT_HASSO) && dsprand::GetRandomNumber(100) < (zanshinChance / 4)))
             {
                 attack.SetAttackType(ZANSHIN_ATTACK);
                 attack.SetAsFirstSwing(false);

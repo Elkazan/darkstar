@@ -29,7 +29,8 @@ function onSpellCast(caster,target,spell)
 	end
 
 	-- hard cap of 350 from natural power
-	pAbs = utils.clamp(1, STONESKIN_CAP);
+	-- pAbs = utils.clamp(1, STONESKIN_CAP); This just always sets it to 350, let's use the actual value, shall we?
+	pAbs = utils.clamp(pAbs, 1, STONESKIN_CAP);
 
 	-- equipment mods
 	if (caster:getEquipID(SLOT_NECK) == 13177) then -- stone gorget
@@ -50,7 +51,7 @@ function onSpellCast(caster,target,spell)
 	end
 
 	local final = pAbs + pEquipMods;
-	if(target:addStatusEffect(EFFECT_STONESKIN,final,0,duration)) then
+	if (target:addStatusEffect(EFFECT_STONESKIN,final,0,duration)) then
 		spell:setMsg(230);
 	else
 		spell:setMsg(MMSG_BUFF_FAIL);

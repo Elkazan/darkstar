@@ -45,6 +45,7 @@ ALL_MAPS = 1; -- Set to 1 to give starting characters all the maps.
 UNLOCK_OUTPOST_WARPS = 2; -- Set to 1 to give starting characters all outpost warps.  2 to add Tu'Lia and Tavnazia.
 
 SHOP_PRICE = 1.000; -- Multiplies prices in NPC shops.
+<<<<<<< HEAD
 GIL_RATE   = 3.000; -- Multiplies gil earned from quests.  Won't always display in game.
 EXP_RATE   = 3.000; -- Multiplies exp earned from fov.
 TABS_RATE  = 3.000; -- Multiplies tabs earned from fov.
@@ -64,6 +65,16 @@ BONECRAFT_GUILD_POINTS    = 10.000; -- Multiplies guild points earned from bonew
 ALCHEMY_GUILD_POINTS      = 10.000; -- Multiplies guild points earned from alchemists' guild trades.
 COOKING_GUILD_POINTS      = 10.000; -- Multiplies guild points earned from culinarians' guild trades.
 DISABLE_GUILD_CONTRACTS   = 1; -- Set to 1 to disable guild contracts, allowing players to accumulate guild points from all guilds at once.
+=======
+GIL_RATE   = 1.000; -- Multiplies gil earned from quests.  Won't always display in game.
+EXP_RATE   = 1.000; -- Multiplies exp earned from fov.
+TABS_RATE  = 1.000; -- Multiplies tabs earned from fov.
+SAN_FAME   = 1.000; -- Multiplies fame earned from San d'Oria quests.
+BAS_FAME   = 1.000; -- Multiplies fame earned from Bastok quests.
+WIN_FAME   = 1.000; -- Multiplies fame earned from Windurst quests.
+NORG_FAME  = 1.000; -- Multiplies fame earned from Norg and Tenshodo quests.
+JEUNO_FAME = 1.000; -- Multiplies fame earned from Jeuno quests.
+>>>>>>> upstream/master
 
 CURE_POWER  = 1.000; -- Multiplies amount healed from Healing Magic, including the relevant Blue Magic.
 SPELL_POWER = 1.000; -- Multiplies damage dealt by Elemental and Divine Magic.
@@ -126,33 +137,33 @@ LOW_LEVEL_REGIME = 1; --Allow people to kill regime targets even if they give no
 GROUNDS_TOMES = 1; -- Enables Grounds of Valor tomes
 
 -- JOB ABILITY/TRAIT SPECIFIC SETTINGS
+<<<<<<< HEAD
 SCAVENGE_RATE = 1.0; --The chance of obtaining an item when you use the Ranger job ability Scavenge.  Do not set above 1!
 STATUS_RESIST_MULTIPLIER = 10; -- Sets the strength of status resist traits.
 CIRCLE_DURATION = 300; -- Sets the duration of circle effects, in seconds. Retail is 5 minutes.
+=======
+>>>>>>> upstream/master
 CIRCLE_KILLER_EFFECT = 20; -- Intimidation percentage granted by circle effects. (made up number)
 KILLER_EFFECT = 10; -- Intimidation percentage from killer job traits.
 
 -- SPELL SPECIFIC SETTINGS
-MILK_OVERWRITE = 1; --Set to 1 to allow Milk and Regen to overwrite each other.  Default is 1.
-JUICE_OVERWRITE = 1; --Set to 1 to allow Juice and Refresh to overwrite each other.  Default is 1.
 DIA_OVERWRITE = 1; --Set to 1 to allow Bio to overwrite same tier Dia.  Default is 1.
 BIO_OVERWRITE = 0; --Set to 1 to allow Dia to overwrite same tier Bio.  Default is 0.
 BARELEMENT_OVERWRITE = 1; --Set to 1 to allow Barelement spells to overwrite each other (prevent stacking).  Default is 1.
 BARSTATUS_OVERWRITE = 1; --Set to 1 to allow Barstatus spells to overwrite each other (prevent stacking).  Default is 1.
-BARD_SONG_LIMIT = 1; --Maximum amount of songs from a single Bard that can be granted to a single target at once.  Set between 1 and 31.
-BARD_INSTRUMENT_LIMIT = 2; --Maximum amount of songs from a single Bard with an instrument that can be granted to a single target at once.  Set between 2 and 32.
-ENHANCING_SONG_DURATION = 120; -- duration of enhancing bard songs such as Minuets, Ballads, etc.
 STONESKIN_CAP = 350; -- soft cap for hp absorbed by stoneskin
 BLINK_SHADOWS = 2;   -- number of shadows supplied by Blink spell
 ENSPELL_DURATION = 180; -- duration of RDM en-spells
 SPIKE_EFFECT_DURATION = 180; -- the duration of RDM, BLM spikes effects (not Reprisal)
 ELEMENTAL_DEBUFF_DURATION = 120; -- base duration of elemental debuffs
-STORM_DURATION = 180; -- duration of Scholar storm spells
-KLIMAFORM_MACC = 30;  -- magic accuracy added by Klimaform. 30 is just a guess.
 AQUAVEIL_INTERR_RATE = 25;  -- percent spell interruption rate reduction from Aquaveil (see http://www.bluegartrls.com/forum/82143-spell-interruption-down-cap-aquaveil-tests.html)
 ABSORB_SPELL_AMOUNT = 8; -- how much of a stat gets absorbed by DRK absorb spells - expected to be a multiple of 8.
 ABSORB_SPELL_TICK = 9; -- duration of 1 absorb spell tick
+<<<<<<< HEAD
 SNEAK_INVIS_DURATION_MULTIPLIER = 300; -- multiplies duration of sneak,invis,deodorize to reduce player torture. 1 = retail behavior. MUST BE INTEGER.
+=======
+SNEAK_INVIS_DURATION_MULTIPLIER = 1; -- multiplies duration of sneak,invis,deodorize to reduce player torture. 1 = retail behavior.
+>>>>>>> upstream/master
 USE_OLD_CURE_FORMULA = false; -- true/false. if true, uses older cure formula (3*MND + VIT + 3*(healing skill/5)) // cure 6 will use the newer formula
 
 -- CELEBRATIONS
@@ -181,6 +192,7 @@ NUMBER_OF_DM_EARRINGS = 1; -- Number of earrings players can simultaneously own 
 HOMEPOINT_TELEPORT = 1; -- Enables the homepoint teleport system
 DIG_ABUNDANCE_BONUS = 0; -- Increase chance of digging up an item (450  = item digup chance +45)
 DIG_FATIGUE = 1; -- Set to 0 to disable Dig Fatigue
+MIASMA_FILTER_COOLDOWN = 5;  -- Number of days a player can obtain a Miasma Filter KI for any of the Boneyard Gully ENMs (Minimum:1)
 
 -- LIMBUS
 BETWEEN_2COSMOCLEANSE_WAIT_TIME = 3; -- day between 2 limbus keyitem  (default 3 days)

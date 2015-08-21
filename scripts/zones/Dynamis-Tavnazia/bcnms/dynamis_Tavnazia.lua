@@ -18,7 +18,12 @@ end;
 function onBcnmEnter(player,instance)
 	
 	player:setVar("DynamisID",GetServerVariable("[DynaTavnazia]UniqueID"));
-	player:setVar("dynaWaitxDay",os.time());
+	local realDay = os.time();
+    local dynaWaitxDay = player:getVar("dynaWaitxDay");
+
+    if ((dynaWaitxDay + (BETWEEN_2DYNA_WAIT_TIME * 24 * 60 * 60)) < realDay) then
+		player:setVar("dynaWaitxDay",realDay);
+	end
 	
 end;
 
@@ -29,7 +34,7 @@ end;
 function onBcnmLeave(player,instance,leavecode)
 --print("leave code "..leavecode);
 
-	if(leavecode == 4) then
+	if (leavecode == 4) then
 		SetServerVariable("[DynaTavnazia]UniqueID",0);
 	end
 	

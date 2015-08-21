@@ -149,8 +149,8 @@ CZoneInPacket::CZoneInPacket(CCharEntity * PChar, int16 csid)
 		WBUFW(data, (0x54) ) = 0xFFFF;
 	}
 
-	WBUFB(data,(0x56)) = PChar->loc.zone->GetBackgroundMusic();
-	WBUFB(data,(0x58)) = PChar->loc.zone->GetBackgroundMusic();
+	WBUFB(data,(0x56)) = PChar->loc.zone->GetBackgroundMusicDay();
+	WBUFB(data,(0x58)) = PChar->loc.zone->GetBackgroundMusicNight();
 	WBUFB(data,(0x5A)) = PChar->loc.zone->GetSoloBattleMusic();
 	WBUFB(data,(0x5C)) = PChar->loc.zone->GetPartyBattleMusic();
     WBUFB(data,(0x5E)) = 0xD4; //default chocobo music for all zones
@@ -200,7 +200,7 @@ CZoneInPacket::CZoneInPacket(CCharEntity * PChar, int16 csid)
 	memcpy(data+(0xCC), &PChar->stats, 14);
 
     WBUFL(data,(0xE8)) = PChar->GetMaxHP();
-    WBUFL(data,(0xEB)) = PChar->GetMaxMP();
+    WBUFL(data,(0xEC)) = PChar->GetMaxMP();
 
-	WBUFB(data,(0x100)) = 0x01;
+    WBUFB(data, (0x100)) = 0x01;
 }
